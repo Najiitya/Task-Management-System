@@ -3,6 +3,7 @@ const cors = require('cors');
 const pool = require('./db');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const authorize = require('./middleware/authorize');
 
 const app = express();
 
@@ -77,6 +78,23 @@ app.post('/login', async (req, res) =>{
     res.status(500).json({ error: "Server Error" });
   }
   
+});
+
+app.post('/tasks', authorize, async(req, res) => {
+  try{
+    const{title, descrption, due_date} =  req.body;
+
+    const newTask = await pool.query(
+      "INSERT INTO tasks (user_id, title, description, due_date) VALUES ($1, $2, $3, $4) RETURNING *",
+      [req.user_id, title, description, due_date]
+    );
+
+    res.json(newTask.rows[0]);
+  }
+  catch(err){
+    console.error(err.message);
+    res.status(500).json({ error: "Server Error" });
+  }
 });
 
 const PORT = process.env.PORT || 5000;
