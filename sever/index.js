@@ -52,7 +52,31 @@ app.post('/register', async (req, res) => {
 app.post('/login', async (req, res) =>{
   try{
     const {email, password} = req.body;
+
+    const user =  await pool.query("SELECT * FROM users WHERE email = $1", [email]);
+    if(user.rowCount.length === 0){
+      return res.status(401).json({error: "Password or email is incorrect"});
+    }
+
+    const validPassword = await bcrypt.compare(password, user.rows[0].password_hash);
+    if (!validPassword) {
+      return res.status(401).json({ error: "Password or Email is incorrect" });
+    }
+
+    const token = jwt.sign(
+      { user_id: user.rows[0].id }, 
+      process.env.JWT_SECRET, 
+      { expiresIn: "1h" } // The token expires in 1 hour
+    );
+
+    res.json({ token });
+
   }
+  catch (err) {
+    console.error(err.message);
+    res.status(500).json({ error: "Server Error" });
+  }
+  
 });
 
 const PORT = process.env.PORT || 5000;
