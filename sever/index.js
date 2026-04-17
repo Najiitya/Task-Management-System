@@ -97,6 +97,21 @@ app.post('/tasks', authorize, async(req, res) => {
   }
 });
 
+app.get('/tasks', authorize, async(req, res) => {
+  try{
+    const allTasks = await pool.query(
+      "SELECT * FROM tasks WHERE user_id = $1 ORDER BY created_at DESC", 
+      [req.user_id]
+    );
+
+    res.json(allTasks.rows);
+
+  }catch(err){
+    console.error(err.message);
+    res.status(500).json({ error: "Server Error" });
+  }
+});
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
