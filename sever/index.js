@@ -82,7 +82,7 @@ app.post('/login', async (req, res) =>{
 
 app.post('/tasks', authorize, async(req, res) => {
   try{
-    const{title, descrption, due_date} =  req.body;
+    const{title, description, due_date} =  req.body;
 
     const newTask = await pool.query(
       "INSERT INTO tasks (user_id, title, description, due_date) VALUES ($1, $2, $3, $4) RETURNING *",
@@ -107,6 +107,54 @@ app.get('/tasks', authorize, async(req, res) => {
     res.json(allTasks.rows);
 
   }catch(err){
+    console.error(err.message);
+    res.status(500).json({ error: "Server Error" });
+  }
+});
+
+// -----------------------------------------
+// UPDATE A TASK (PUT)
+// -----------------------------------------
+app.put('/tasks/:id', authorize, async (req, res) => {
+  try {
+    const { id } = req.params; // The task ID from the URL
+    const { title, description, status, due_date } = req.body;
+
+    // The query explicitly checks both task ID and user_id to prevent unauthorized edits
+    const updateTask = await pool.query(
+      "UPDATE tasks SET title = $1, description = $2, status = $3, due_date = $4 WHERE id = $5 AND user_id = $6 RETURNING *",
+      [title, description, status, due_date, id, req.user_id]
+    );
+
+    if (updateTask.rows.length === 0) {
+      return res.status(404).json({ error: "Task not found or unauthorized to edit" });
+    }
+
+    res.json(updateTask.rows[0]);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({ error: "Server Error" });
+  }
+});
+
+// -----------------------------------------
+// DELETE A TASK (DELETE)
+// -----------------------------------------
+app.delete('/tasks/:id', authorize, async (req, res) => {
+  try {
+    const { id } = req.params; // The task ID from the URL
+
+    const deleteTask = await pool.query(
+      "DELETE FROM tasks WHERE id = $1 AND user_id = $2 RETURNING *",
+      [id, req.user_id]
+    );
+
+    if (deleteTask.rows.length === 0) {
+      return res.status(404).json({ error: "Task not found or unauthorized to delete" });
+    }
+
+    res.json({ message: "Task deleted successfully", deletedTask: deleteTask.rows[0] });
+  } catch (err) {
     console.error(err.message);
     res.status(500).json({ error: "Server Error" });
   }
