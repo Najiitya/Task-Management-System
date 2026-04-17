@@ -20,6 +20,6 @@ module.exports = function(req, res, next) {
     }catch(err){
         console.error(err.message);
 
-        return res.status(403).json({eroor : "Access denied. Invalid or Expired Token"});
+        return res.status(403).json({error : "Access denied. Invalid or Expired Token"});
     }
 }
